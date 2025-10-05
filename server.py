@@ -64,7 +64,9 @@ def retrieve_context(query, top_k=4, selected_files=None):
     return snippets, sources
 
 PDF_DIR = "data/pdfs" # Make sure this is defined at the top level
-
+@app.get("/")
+async def serve_home():
+    return FileResponse('Kalys.html')
 # Add this new endpoint to your server
 @app.get("/download/{filename}")
 async def download_file(filename: str):
