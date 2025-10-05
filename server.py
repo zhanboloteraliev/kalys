@@ -24,7 +24,8 @@ origins = [
     "https://www.kalysbot.com",
     "http://localhost:5500",
     "http://127.0.0.1:5500",
-    "http://localhost:63342"
+    "http://localhost:63342",
+    "https://kalys-fzbatnr2y-zhans-projects-e9448977.vercel.app"
 ]
 app = FastAPI()
 app.add_middleware(
