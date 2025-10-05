@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalys Bot</title>
+    <link rel="icon" type="image/jpeg" href="kalysicon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Add these styles at the end of your existing <style> block */
+        #lang-selector-options li {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        #lang-selector-options li:hover {
+            background-color: #4b5563; /* gray-600 */
+        }
+        /* Note: Custom fonts removed per user request. Using system sans-serif fallback. */
+        body {
+            font-family: sans-serif;
+            background-color: #1f2937; /* Dark background */
+            color: #f3f4f6;
+        }
+        /* Custom scrollbar for chat area (now for the entire scrollable content) */
+        #scrollable-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        #scrollable-content::-webkit-scrollbar-thumb {
+            background-color: #4b5563;
+            border-radius: 4px;
+        }
+        #scrollable-content::-webkit-scrollbar-track {
+            background-color: #1f2937;
+        }
+        /* Style for the fixed sidebar */
+        .sidebar {
+            transition: all 0.3s ease-in-out;
+        }
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Streamlit-like source block styling */
+        .source-snippet {
+            /* Mimicking a terminal/code look */
+            background-color: #1e293b; /* Slate-800 */
+            color: #e2e8f0; /* Slate-200 */
+            font-family: monospace;
+            padding: 8px;
+            border-radius: 4px;
+
+            /* == Use 'scroll' to ensure scrollbar is always available when needed. == */
+            max-height: 100px;
+            overflow-y: scroll;
+            /* ====================================================================================== */
+
+            overflow-x: auto;
+            white-space: pre-wrap;
+            font-size: 0.75rem;
+            border: 1px solid #475569; /* Slate-600 */
+        }
+        .source-snippet::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .source-snippet::-webkit-scrollbar-thumb {
+            background-color: #64748b; /* Slate-500 */
+            border-radius: 3px;
+        }
+        .source-snippet::-webkit-scrollbar-track {
+            background-color: #1e293b;
+        }
+
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden">
+
+    <div id="sidebar" class="sidebar w-64 p-4 bg-gray-800 text-gray-100 flex flex-col overflow-y-auto">
+        <h2 class="text-xl font-bold mb-4">
+            <span id="sidebar-header-filter"></span>
+        </h2>
+
+        <div class="mb-6 pb-4 border-b border-gray-700 flex-shrink-0">
+            <h3 class="text-lg font-semibold mb-2">🌐 Language</h3>
+            <div id="custom-lang-selector" class="relative">
+                <button id="lang-selector-button" type="button" class="w-full p-2 flex items-center bg-gray-700 rounded-lg text-left">
+                    </button>
+                <ul id="lang-selector-options" class="hidden absolute z-10 w-full mt-1 bg-gray-600 rounded-lg shadow-lg">
+                    </ul>
+            </div>
+        </div>
+
+        <div id="filter-section" class="mb-6 pb-4 border-b border-gray-700 flex-shrink-0">
+            <h3 class="text-lg font-semibold mb-2" id="sidebar-header-filter-text"></h3>
+            <p class="text-sm text-gray-400 mb-3" id="sidebar-markdown-filter"></p>
+            <div id="document-checkboxes" class="space-y-2">
+                </div>
+            <p id="sidebar-info-searching" class="mt-3 text-sm font-medium text-blue-400"></p>
+        </div>
+
+        <div class="mb-6 pb-4 border-b border-gray-700 flex-shrink-0">
+            <h3 class="text-lg font-semibold mb-2" id="sidebar-header-retrieval"></h3>
+            <label for="k-slider" class="block text-sm font-medium mb-1" id="sidebar-slider-label"></label>
+            <input type="range" id="k-slider" min="1" max="10" value="4" step="1" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer range-lg">
+            <span id="k-value" class="text-sm text-gray-400 block text-right mt-1">4</span>
+        </div>
+
+        <div class="flex-grow pt-4">
+            <h3 class="text-lg font-semibold mb-2" id="sidebar-header-downloads"></h3>
+            <p class="text-sm text-gray-400 mb-3" id="sidebar-markdown-downloads"></p>
+            <div class="space-y-2 text-sm bg-gray-900 p-2 rounded-lg" id="download-buttons">
+                </div>
+        </div>
+
+
+    </div>
+
+    <div class="flex-1 flex flex-col">
+
+        <div id="scrollable-content" class="flex-1 overflow-y-auto bg-gray-900">
+
+            <header class="p-6 pb-2 flex justify-center">
+                <div class="flex items-center space-x-4 max-w-xl w-full">
+                    <img src="images/kalyslogo2-removebg-preview.png" alt="Kalys Logo" class="w-40 h-40 object-contain flex-shrink-0">
+                    <div class="bg-white text-gray-800 p-4 rounded-xl rounded-tl-none shadow-xl flex-1 border border-gray-300">
+                        <h1 class="text-xl font-extrabold" id="main-title"></h1>
+                    </div>
+                </div>
+            </header>
+
+            <main id="chat-area" class="p-6 pt-0 space-y-4">
+                </main>
+        </div>
+
+        <div class="p-4 bg-gray-800 shadow-lg flex items-center space-x-3 flex-shrink-0">
+            <button id="new-chat-button" class="px-3 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition duration-150 shadow-md flex-shrink-0 text-sm"></button>
+
+            <input type="text" id="chat-input" class="flex-1 p-3 rounded-xl bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Ask a question about laws...">
+            <button id="send-button" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition duration-150 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0">
+                <span id="send-text">Send</span>
+                <div id="loading-spinner" class="loading-spinner hidden"></div>
+            </button>
+        </div>
+    </div>
+
+
+
+    <script type="module">
+        // --- Language Localization Maps ---
+        const LANGUAGE_MAPS = {
+            "en": {
+                "label": "English",
+                "flag": "./images/united-states.png",
+                "page_title": "Kalys MVP",
+                "main_title": "I am Kalys 👋, a Kyrgyz law assistant bot.",
+                "sidebar_header_filter": "Document Filtering (Knowledge Base)",
+                "sidebar_markdown_filter": "Select the law codes the engine should search within.",
+                "sidebar_info_searching": "Searching across **{count}** documents.",
+                "sidebar_header_retrieval": "Retrieval Settings",
+                "sidebar_slider_label": "Documents Chunks to Retrieve (k)",
+                "sidebar_header_downloads": "Source Downloads",
+                "sidebar_markdown_downloads": "These sources might be outdated.",
+                "sidebar_check_api": "✅ **Status:** API Keys loaded for frontend calls.",
+                "chat_input_placeholder": "Ask a question about laws...",
+                "spinner_thinking": "Thinking...",
+                "source_expander": "📝 Context Snippets Used for this Answer (Placeholder)",
+                "source_label": "Source {j}: {display_name} (Page {display_page})",
+                "button_new_chat": "Start New Chat",
+                "warning_disclaimer": "⚠️ **Always verify answers with official sources.**",
+                "send_text": "Send",
+                "api_error_message": "An API error occurred. Please check your API key, network, and browser console for details. (Check the console for 401 Unauthorized errors).",
+            },
+            "ru": {
+                "label": "Русский",
+                "flag": "./images/russia.png",
+                "page_title": "Калыс MVP",
+                "main_title": "Я Калыс 👋, бот-помощник по законам Кыргызстана.",
+                "sidebar_header_filter": "Фильтрация Документов (База знаний)",
+                "sidebar_markdown_filter": "Выберите своды законов для поиска.",
+                "sidebar_info_searching": "Поиск ведется по **{count}** документам.",
+                "sidebar_header_retrieval": "Настройки Извлечения",
+                "sidebar_slider_label": "Извлекаемые Части Документов (k)",
+                "sidebar_header_downloads": "Загрузка Источников",
+                "sidebar_markdown_downloads": "Источники могут быть устаревшими.",
+                "sidebar_check_api": "✅ **Статус:** Ключи API загружены для фронтенд-вызовов.",
+                "chat_input_placeholder": "Задайте вопрос про законы...",
+                "spinner_thinking": "Думаю...",
+                "source_expander": "📝 Контекстные фрагменты, использованные для ответа (Заполнитель)",
+                "source_label": "Источник {j}: {display_name} (Стр. {display_page})",
+                "button_new_chat": "Начать Новый Чат",
+                "warning_disclaimer": "⚠️ **Всегда проверяйте ответы по официальным источникам.**",
+                "send_text": "Отправить",
+                "api_error_message": "Произошла ошибка API. Проверьте ваш ключ API, сеть и консоль браузера для получения подробной информации. (Проверьте консоль на наличие ошибок 401 Unauthorized).",
+            },
+            "ky": {
+                "label": "Кыргызча",
+                "flag": "./images/flag.png",
+                "page_title": "Калыс MVP",
+                "main_title": "Мен Калыс 👋 — Кыргыз мыйзамдары боюнча жардамчы бот.",
+                "sidebar_header_filter": "Документтерди чыпкалоо (Билим базасы)",
+                "sidebar_markdown_filter": "Издөө үчүн мыйзам кодекстерин тандаңыз.",
+                "sidebar_info_searching": "**{count}** документ боюнча издөө.",
+                "sidebar_header_retrieval": "Издөө Жөндөөлөрү",
+                "sidebar_slider_label": "Канча булактарды тапкыңыз келет?",
+                "sidebar_header_downloads": "Булактарды Жүктөп Алуу",
+                "sidebar_markdown_downloads": "Бул булактар эски болушу мүмкүн.",
+                "sidebar_check_api": "✅ **Статус:** API ачкычтары фронтенд чалуулары үчүн жүктөлдү.",
+                "chat_input_placeholder": "Мыйзамдар боюнча суроо бериңиз...",
+                "spinner_thinking": "Ойлонууда...",
+                "source_expander": "📝 Колдонулган Контексттик Бөлүктөр",
+                "source_label": "Булак {j}: {display_name} (Бет {display_page})",
+                "button_new_chat": "Жаңы Чатты Баштоо",
+                "warning_disclaimer": "⚠️ **Ар дайым жоопторумду расмий булактардан текшериңиз.**",
+                "send_text": "Жөнөтүү",
+                "api_error_message": "API катасы пайда болду. API ачкычыңызды, тармагыңызды жана браузер консолун текшериңиз. (401 Unauthorized каталарын консолуңуздан текшериңиз).",
+            },
+        };
+
+        // --- Mapping for Descriptive Names (Localized) ---
+        const PDF_NAME_MAP = {
+            "05052021_constitution.pdf": {"en": "Constitution of Kyrgyz Republic", "ru": "Конституция Кыргызской Республики", "ky": "Кыргыз Республикасынын Конституциясы"},
+            "07102025_civilcode1.pdf": {"en": "Civil Code (Part 1)", "ru": "Гражданский кодекс (часть 1)", "ky": "Жарандык кодекс (1-бөлүк)"},
+            "07022025_civilcode2.pdf": {"en": "Civil Code (Part 2)", "ru": "Гражданский кодекс (часть 2)", "ky": "Жарандык кодекс (2-бөлүк)"},
+            "06aug2025_civilprocedurecode.pdf": {"en": "Civil Procedural Code", "ru": "Гражданский процессуальный кодекс", "ky": "Жарандык процесстик кодекси"},
+            "10jul2025_labourcode.pdf": {"en": "Labour Code", "ru": "Трудовой кодекс", "ky": "Эмгек кодекси"},
+            "31jul2025_taxcode.pdf": {"en": "Tax Code", "ru": "Налоговый кодекс", "ky": "Салык кодекси"},
+            "landcode.pdf": {"en": "Land Code", "ru": "Земельный кодекс", "ky": "Жер кодекси"},
+            "17jul2025_familycode.pdf": {"en": "Family Code", "ru": "Семейный кодекс", "ky": "Үй-бүлө кодекси"},
+            "28jul2025_penalcode.pdf": {"en": "Criminal Code", "ru": "Уголовный кодекс", "ky": "Кылмыш-жаза кодекси"},
+            "09aug2025_crimeprocedurecode.pdf": {"en": "Criminal Procedure Code", "ru": "Уголовно-процессуальный кодекс", "ky": "Кылмыш-жаза процессуалдык кодекси"},
+            "31jul2025_crimeexecutivecode.pdf": {"en": "Criminal Execution Code", "ru": "Уголовно-исполнительный кодекс", "ky": "Жаза-аткаруу кодекси"},
+            "13aug2025_offencecode.pdf": {"en": "Code of Offenses", "ru": "Кодекс о правонарушениях", "ky": "Укук бузуулар жөнүндө кодекс"},
+            "28feb2025_adminprocedurecode.pdf": {"en": "Administrative Procedural Code", "ru": "Административный процессуальный кодекс", "ky": "Административдик-процесстик кодекси"},
+            "01aug2020_kidscode.pdf": {"en": "Children's Code", "ru": "Кодекс о детях", "ky": "Балдар жөнүндө кодекс"},
+            "29apr2025_budgetcode.pdf": {"en": "Budget Code", "ru": "Бюджетный кодекс", "ky": "Бюджет кодекси"},
+            "10jul2025_nontaxrevenuecode.pdf": {"en": "Non-Tax Income Code", "ru": "Кодекс о неналоговых доходах", "ky": "Салыктык эмес кирешелер жөнүндө кодекс"},
+            "digitalcode.pdf": {"en": "Digital Code", "ru": "Цифровой кодекс", "ky": "Санарип кодекси"},
+            "judicalhonorcode.pdf": {"en": "Code of Ethics For Judges", "ru": "Кодекс чести судей", "ky": "Соттордун ар-намыс кодекси"},
+            "tkeaes.pdf": {"en": "Customs Code of the Eurasian Economic Union", "ru": "Таможенный кодекс Евразийского экономического союза", "ky": "Евразия экономикалык биримдигинин Бажы кодекси"}
+        };
+
+        // List of all possible PDF file names
+        const ALL_DOCUMENTS = Object.keys(PDF_NAME_MAP);
+
+
+        // --- Session State & Globals ---
+        let chatHistory = [];
+        let currentLanguage = localStorage.getItem('language') || 'en';
+        let selectedFiles = Object.keys(PDF_NAME_MAP);
+        let currentKValue = 4; // Tracks the retrieval k value
+
+        // --- Translator and Helpers ---
+        function T(key, kwargs = {}) {
+            const langMap = LANGUAGE_MAPS[currentLanguage] || LANGUAGE_MAPS['en'];
+            let text = langMap[key] || LANGUAGE_MAPS['en'][key] || `[MISSING TEXT: ${key}]`;
+
+            // Basic string interpolation
+            for (const [k, v] of Object.entries(kwargs)) {
+                text = text.replace(`{${k}}`, v);
+            }
+            return text;
+        }
+
+        function getDocDisplayName(fileName) {
+            const docMap = PDF_NAME_MAP[fileName] || {};
+            return docMap[currentLanguage] || docMap['en'] || fileName;
+        }
+
+
+
+        // --- UI Rendering ---
+        function renderUI() {
+            // Update static text elements
+            document.getElementById('main-title').textContent = T("main_title");
+            document.getElementById('sidebar-header-filter-text').textContent = T("sidebar_header_filter");
+            document.getElementById('sidebar-markdown-filter').textContent = T("sidebar_markdown_filter");
+            document.getElementById('sidebar-header-retrieval').textContent = T("sidebar_header_retrieval");
+            document.getElementById('sidebar-slider-label').textContent = T("sidebar_slider_label");
+            document.getElementById('sidebar-header-downloads').textContent = T("sidebar_header_downloads");
+            document.getElementById('sidebar-markdown-downloads').textContent = T("sidebar_markdown_downloads");
+
+
+            document.getElementById('new-chat-button').textContent = T("button_new_chat");
+            document.getElementById('chat-input').placeholder = T("chat_input_placeholder");
+            document.getElementById('send-text').textContent = T("send_text");
+
+            // Update Custom Language Selector
+            const langButton = document.getElementById('lang-selector-button');
+            const langOptions = document.getElementById('lang-selector-options');
+            langOptions.innerHTML = ''; // Clear previous options
+
+            // Set the button's content to the currently selected language
+            const currentLangData = LANGUAGE_MAPS[currentLanguage];
+            langButton.innerHTML = `
+                <img src="${currentLangData.flag}" alt="${currentLangData.label} flag" width="20" class="mr-2">
+                <span>${currentLangData.label}</span>
+            `;
+
+            // Populate the options list
+            Object.keys(LANGUAGE_MAPS).forEach(langKey => {
+                const langData = LANGUAGE_MAPS[langKey];
+                const li = document.createElement('li');
+                li.dataset.lang = langKey; // Store the language key
+                li.innerHTML = `
+                    <img src="${langData.flag}" alt="${langData.label} flag" width="20" class="mr-2">
+                    <span>${langData.label}</span>
+                `;
+                langOptions.appendChild(li);
+            });
+
+            // Update Document Checkboxes
+            const checkboxContainer = document.getElementById('document-checkboxes');
+            checkboxContainer.innerHTML = '';
+
+            Object.keys(PDF_NAME_MAP).forEach(fileName => {
+                const isChecked = selectedFiles.includes(fileName);
+                const displayName = getDocDisplayName(fileName);
+
+                // FIX: Use 'flex items-start' for consistent vertical alignment with multiline text
+                const div = document.createElement('div');
+                div.className = 'flex items-start';
+
+                div.innerHTML = `
+                    <input type="checkbox" id="check-${fileName}" value="${fileName}" ${isChecked ? 'checked' : ''} class="w-4 h-4 mt-1 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 flex-shrink-0">
+                    <label for="check-${fileName}" class="ml-2 text-sm font-medium text-gray-300">${displayName}</label>
+                `;
+
+                div.querySelector('input').addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        selectedFiles.push(fileName);
+                    } else {
+                        selectedFiles = selectedFiles.filter(f => f !== fileName);
+                    }
+                    updateSearchingInfo();
+                });
+                checkboxContainer.appendChild(div);
+            });
+
+            // Source Downloads
+            const downloadContainer = document.getElementById('download-buttons');
+            downloadContainer.innerHTML = '';
+            Object.keys(PDF_NAME_MAP).forEach(fileName => {
+                const displayName = getDocDisplayName(fileName);
+                const link = document.createElement('a'); // Create a link tag
+                link.href = `/download/${fileName}`;      // Point to the new endpoint
+                link.download = fileName;                 // Tell the browser to download it
+                link.className = 'block w-full px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-left text-sm transition duration-150';
+                link.textContent = `⬇️ ${displayName}`;
+                downloadContainer.appendChild(link);
+            });
+
+            // Re-render chat history to apply new language strings
+            renderHistory();
+        }
+
+        function updateSearchingInfo() {
+            const count = selectedFiles.length;
+            document.getElementById('sidebar-info-searching').innerHTML = T("sidebar_info_searching", { count: count });
+        }
+
+        function renderMessage(role, content, sources = []) {
+            const chatArea = document.getElementById('chat-area');
+            const isAssistant = role === 'assistant';
+
+            let avatarHtml;
+            if (isAssistant) {
+                avatarHtml = `<img src="images/kalysicon.png" alt="Kalys Avatar" class="w-10 h-10 object-contain flex-shrink-0">`;
+            } else {
+                avatarHtml = `<div class="text-2xl flex-shrink-0">👤</div>`;
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `flex ${isAssistant ? 'justify-start' : 'justify-end'} items-start`;
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = `max-w-4xl p-4 shadow-lg ${
+                isAssistant
+                ? 'bg-gray-700 text-gray-100 rounded-xl rounded-tl-none mx-2'
+                : 'bg-blue-600 text-white rounded-xl rounded-tr-none mx-2'
+            }`;
+
+            let contentHtml;
+            if (isAssistant) {
+                const warningHtml = `<p class="mb-2 text-yellow-400 text-sm font-medium">${T("warning_disclaimer")}</p><hr class="border-gray-600 mb-2">`;
+                contentHtml = content.startsWith(T("spinner_thinking")) ? content : warningHtml + content;
+            } else {
+                contentHtml = content;
+            }
+
+            contentDiv.innerHTML = contentHtml;
+
+            // Add Source Expander (Assistant only, only if sources are present)
+            if (isAssistant && sources.length > 0) {
+                const expanderTitle = T("source_expander");
+                let sourcesHtml = '';
+                sources.forEach((source, index) => {
+                    // Note: The UI now expects 'uri', 'page', and 'snippet' from the RAG process
+                    const sourceFileName = source.uri || 'Unknown Source';
+                    const sourcePage = source.page || 'N/A';
+                    const displayName = getDocDisplayName(sourceFileName);
+
+                    const label = T("source_label", { j: index + 1, display_name: displayName, display_page: sourcePage });
+
+                    sourcesHtml += `
+                        <div class="mt-3">
+                            <p class="font-bold text-blue-400 text-xs mb-1">${label}</p>
+                            <pre class="source-snippet">${source.snippet}</pre>
+                        </div>
+                    `;
+                });
+
+                // This is the HTML equivalent of the Streamlit expander
+                contentDiv.innerHTML += `
+                    <details class="mt-4 p-2 bg-gray-600 rounded-lg cursor-pointer">
+                        <summary class="font-semibold text-sm">${expanderTitle}</summary>
+                        <div class="space-y-3 p-1">
+                            ${sourcesHtml}
+                        </div>
+                    </details>
+                `;
+            }
+
+            if (isAssistant) {
+                messageDiv.innerHTML = avatarHtml;
+                messageDiv.appendChild(contentDiv);
+            } else {
+                messageDiv.appendChild(contentDiv);
+                messageDiv.innerHTML += avatarHtml;
+            }
+
+            chatArea.appendChild(messageDiv);
+
+            const scrollableContent = document.getElementById('scrollable-content');
+            scrollableContent.scrollTop = scrollableContent.scrollHeight;
+        }
+
+        function renderHistory() {
+            const chatArea = document.getElementById('chat-area');
+            chatArea.innerHTML = '';
+            chatHistory.forEach(msg => {
+                // Ensure we only pass the clean content to renderMessage for re-rendering
+                const contentWithoutWarning = msg.role === 'assistant'
+                    ? msg.content.replace(T("warning_disclaimer"), '').trim()
+                    : msg.content;
+                renderMessage(msg.role, contentWithoutWarning, msg.sources);
+            });
+        }
+
+        // --- Core Chat Logic ---
+        async function handleChat(prompt) {
+            const inputElement = document.getElementById('chat-input');
+            const sendButton = document.getElementById('send-button');
+            const loadingSpinner = document.getElementById('loading-spinner');
+
+            if (!prompt.trim()) return;
+
+            // 1. Add User Message and update history
+            renderMessage('user', prompt);
+            chatHistory.push({ role: 'user', content: prompt, sources: [] });
+            inputElement.value = '';
+
+            // 2. Add temporary loading message and update history
+            renderMessage('assistant', T("spinner_thinking"));
+            chatHistory.push({ role: 'assistant', content: T("spinner_thinking"), sources: [] });
+
+            // 3. Disable input/button and show spinner
+            inputElement.disabled = true;
+            sendButton.disabled = true;
+            document.getElementById('send-text').classList.add('hidden');
+            loadingSpinner.classList.remove('hidden');
+
+            let assistantContent = T("api_error_message");
+            let sources = [];
+
+            try {
+                // --- Fetch from your backend that runs RAG ---
+                const ragResponse = await fetch("/rag", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  // Note: You still need to fix the issue where `currentKValue` isn't sent
+                  body: JSON.stringify({ question: prompt, history: chatHistory, top_k: currentKValue, filters: selectedFiles })
+                }).then(res => res.json());
+
+                // Use the answer and sources directly from your backend
+                assistantContent = ragResponse.answer || "⚠️ Error fetching answer from backend.";
+                sources = ragResponse.sources || [];
+
+
+
+
+                // If the API call succeeded, we keep the placeholder sources to show the UI works.
+                // In a real RAG system, sources would be populated by the RAG step.
+
+            } catch (error) {
+                console.error("Chat Request Error:", error);
+                assistantContent = T("api_error_message");
+                // Clear the placeholder sources if the API call fails, showing the error is more important
+                sources = [];
+            } finally {
+                // 4. Remove temporary message and Render final Assistant Message
+                chatHistory.pop(); // Remove the 'thinking' message
+
+                const chatArea = document.getElementById('chat-area');
+                if (chatArea.lastChild) {
+                    chatArea.lastChild.remove();
+                }
+
+                renderMessage('assistant', assistantContent, sources);
+                chatHistory.push({ role: 'assistant', content: assistantContent, sources: sources });
+
+                // 5. Re-enable input/button and hide spinner
+                inputElement.disabled = false;
+                sendButton.disabled = false;
+                document.getElementById('send-text').classList.remove('hidden');
+                loadingSpinner.classList.add('hidden');
+                inputElement.focus();
+            }
+        }
+
+        // --- Event Listeners and Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+
+
+            renderUI(); // Initial render of all localized text and checkboxes
+
+            // K-Slider Listener
+            const kSlider = document.getElementById('k-slider');
+            function updateKValue() {
+                currentKValue = kSlider.value;
+                document.getElementById('k-value').textContent = currentKValue;
+            }
+            kSlider.addEventListener('input', updateKValue);
+            updateKValue(); // Set initial value display
+
+            // Custom Language Selector Listener
+            const langButton = document.getElementById('lang-selector-button');
+            const langOptions = document.getElementById('lang-selector-options');
+
+            // Show/hide the dropdown when the button is clicked
+            langButton.addEventListener('click', () => {
+                langOptions.classList.toggle('hidden');
+            });
+
+            // Handle language selection when an option is clicked
+            langOptions.addEventListener('click', (e) => {
+                const li = e.target.closest('li');
+                if (li && li.dataset.lang) {
+                    currentLanguage = li.dataset.lang;
+                    localStorage.setItem('language', currentLanguage);
+                    renderUI(); // Re-render everything with new language
+                    langOptions.classList.add('hidden'); // Hide the dropdown after selection
+                }
+            });
+
+            // Hide dropdown if user clicks outside of it
+            document.addEventListener('click', (e) => {
+                const selector = document.getElementById('custom-lang-selector');
+                if (!selector.contains(e.target)) {
+                    langOptions.classList.add('hidden');
+                }
+            });
+
+            // Send Button Listener
+            const chatInput = document.getElementById('chat-input');
+            const sendButton = document.getElementById('send-button');
+
+            const sendMessage = () => {
+                const prompt = chatInput.value.trim();
+                if (prompt) {
+                    handleChat(prompt);
+                }
+            };
+
+            sendButton.addEventListener('click', sendMessage);
+
+            // Input Enter Key Listener
+            chatInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !sendButton.disabled) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            // New Chat Button Listener
+            document.getElementById('new-chat-button').addEventListener('click', () => {
+                chatHistory = [];
+                document.getElementById('chat-area').innerHTML = '';
+                chatInput.focus();
+            });
+
+            // Set initial focus
+            chatInput.focus();
+
+            console.log("Kalys Bot Initialized.");
+        });
+    </script>
+</body>
+</html>
