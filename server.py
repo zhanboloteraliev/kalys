@@ -6,6 +6,7 @@ import uvicorn
 from openai import OpenAI, APIError
 from pinecone import Pinecone, PineconeException
 from dotenv import load_dotenv
+from fastapi.staticfiles import StaticFiles
 
 load_dotenv()
 # === Load API keys from env ===
@@ -35,6 +36,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # === Retrieval function ===
 def retrieve_context(query, top_k=4, selected_files=None):

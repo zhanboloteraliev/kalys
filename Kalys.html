@@ -132,7 +132,7 @@
 
             <header class="p-6 pb-2 flex justify-center">
                 <div class="flex items-center space-x-4 max-w-xl w-full">
-                    <img src="images/kalyslogo2-removebg-preview.png" alt="Kalys Logo" class="w-40 h-40 object-contain flex-shrink-0">
+                    <img src="/static/images/kalyslogo2-removebg-preview.png" alt="Kalys Logo" class="w-40 h-40 object-contain flex-shrink-0">
                     <div class="bg-white text-gray-800 p-4 rounded-xl rounded-tl-none shadow-xl flex-1 border border-gray-300">
                         <h1 class="text-xl font-extrabold" id="main-title"></h1>
                     </div>
@@ -161,7 +161,7 @@
         const LANGUAGE_MAPS = {
             "en": {
                 "label": "English",
-                "flag": "./images/united-states.png",
+                "flag": "/static/images/united-states.png",
                 "page_title": "Kalys MVP",
                 "main_title": "I am Kalys 👋, a Kyrgyz law assistant bot.",
                 "sidebar_header_filter": "Document Filtering (Knowledge Base)",
@@ -183,7 +183,7 @@
             },
             "ru": {
                 "label": "Русский",
-                "flag": "./images/russia.png",
+                "flag": "/static/images/russia.png",
                 "page_title": "Калыс MVP",
                 "main_title": "Я Калыс 👋, бот-помощник по законам Кыргызстана.",
                 "sidebar_header_filter": "Фильтрация Документов (База знаний)",
@@ -205,7 +205,7 @@
             },
             "ky": {
                 "label": "Кыргызча",
-                "flag": "./images/flag.png",
+                "flag": "/static/images/flag.png",
                 "page_title": "Калыс MVP",
                 "main_title": "Мен Калыс 👋 — Кыргыз мыйзамдары боюнча жардамчы бот.",
                 "sidebar_header_filter": "Документтерди чыпкалоо (Билим базасы)",
@@ -375,7 +375,7 @@
 
             let avatarHtml;
             if (isAssistant) {
-                avatarHtml = `<img src="images/kalysicon.png" alt="Kalys Avatar" class="w-10 h-10 object-contain flex-shrink-0">`;
+                avatarHtml = `<img src="/static/images/kalysicon.png" alt="Kalys Avatar" class="w-10 h-10 object-contain flex-shrink-0">`;
             } else {
                 avatarHtml = `<div class="text-2xl flex-shrink-0">👤</div>`;
             }
