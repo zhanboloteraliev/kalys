@@ -14,7 +14,7 @@ PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 PINECONE_ENVIRONMENT = os.getenv("PINECONE_ENVIRONMENT")
 
 # Initialize clients
-client = OpenAI(api_key=OPENAI_API_KEY)
+client = OpenAI(api_key=OPENAI_API_KEY, timeout=20.0)
 pc = Pinecone(api_key=PINECONE_API_KEY)
 index = pc.Index("kalysbot")
 
