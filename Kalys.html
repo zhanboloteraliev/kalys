@@ -86,7 +86,7 @@
 </head>
 <body class="h-screen flex overflow-hidden">
 
-    <div id="sidebar" class="sidebar w-64 p-4 bg-gray-800 text-gray-100 flex flex-col overflow-y-auto">
+    <div id="sidebar" class="sidebar fixed inset-y-0 left-0 w-64 p-4 bg-gray-800 text-gray-100 flex flex-col overflow-y-auto transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out z-30">
         <h2 class="text-xl font-bold mb-4">
             <span id="sidebar-header-filter"></span>
         </h2>
@@ -95,9 +95,9 @@
             <h3 class="text-lg font-semibold mb-2">🌐 Language</h3>
             <div id="custom-lang-selector" class="relative">
                 <button id="lang-selector-button" type="button" class="w-full p-2 flex items-center bg-gray-700 rounded-lg text-left">
-                    </button>
+                </button>
                 <ul id="lang-selector-options" class="hidden absolute z-10 w-full mt-1 bg-gray-600 rounded-lg shadow-lg">
-                    </ul>
+                </ul>
             </div>
         </div>
 
@@ -105,7 +105,7 @@
             <h3 class="text-lg font-semibold mb-2" id="sidebar-header-filter-text"></h3>
             <p class="text-sm text-gray-400 mb-3" id="sidebar-markdown-filter"></p>
             <div id="document-checkboxes" class="space-y-2">
-                </div>
+            </div>
             <p id="sidebar-info-searching" class="mt-3 text-sm font-medium text-blue-400"></p>
         </div>
 
@@ -120,16 +120,20 @@
             <h3 class="text-lg font-semibold mb-2" id="sidebar-header-downloads"></h3>
             <p class="text-sm text-gray-400 mb-3" id="sidebar-markdown-downloads"></p>
             <div class="space-y-2 text-sm bg-gray-900 p-2 rounded-lg" id="download-buttons">
-                </div>
+            </div>
         </div>
-
-
     </div>
 
-    <div class="flex-1 flex flex-col">
+    <div class="flex-1 flex flex-col md:ml-64">
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-20 hidden md:hidden"></div>
+
+        <button id="sidebar-toggle" class="md:hidden fixed top-4 left-4 z-30 p-2 bg-gray-700 rounded-md text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+        </button>
 
         <div id="scrollable-content" class="flex-1 overflow-y-auto bg-gray-900">
-
             <header class="p-6 pb-2 flex justify-center">
                 <div class="flex items-center space-x-4 max-w-xl w-full">
                     <img src="static/kalyslogo2-removebg-preview.png" alt="Kalys Logo" class="w-40 h-40 object-contain flex-shrink-0">
@@ -138,14 +142,11 @@
                     </div>
                 </div>
             </header>
-
-            <main id="chat-area" class="p-6 pt-0 space-y-4">
-                </main>
+            <main id="chat-area" class="p-6 pt-0 space-y-4"></main>
         </div>
 
         <div class="p-4 bg-gray-800 shadow-lg flex items-center space-x-3 flex-shrink-0">
             <button id="new-chat-button" class="px-3 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition duration-150 shadow-md flex-shrink-0 text-sm"></button>
-
             <input type="text" id="chat-input" class="flex-1 p-3 rounded-xl bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Ask a question about laws...">
             <button id="send-button" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition duration-150 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0">
                 <span id="send-text">Send</span>
