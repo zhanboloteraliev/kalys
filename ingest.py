@@ -3,9 +3,9 @@ import os
 import uuid
 from dotenv import load_dotenv
 from openai import OpenAI
-from PyPDF2 import PdfReader
 from pinecone import Pinecone, ServerlessSpec
-from langchain.text_splitter import RecursiveCharacterTextSplitter # --- NEW ---
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from unstructured.partition.pdf import partition_pdf
 
 # -----------------------------
 # Load environment variables
@@ -45,31 +45,6 @@ pc.create_index(
 
 index = pc.Index(INDEX_NAME)
 
-# -----------------------------
-# --- NEW --- Initialize the smart text splitter
-# -----------------------------
-text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=1800,
-    chunk_overlap=200,
-    length_function=len,
-    separators=["\n\n", "\n", ". ", " ", ""] # Defines the order of splitting priority
-)
-
-# -----------------------------
-# Helper functions
-# -----------------------------
-def extract_text_from_pdf(pdf_path):
-    reader = PdfReader(pdf_path)
-    pages = []
-    for i, page in enumerate(reader.pages):
-        text = page.extract_text()
-        if text:
-            pages.append({"page": i + 1, "text": text})
-    return pages
-
-# -----------------------------
-# --- REMOVED --- The old, naive chunk_text function is no longer needed.
-# -----------------------------
 
 def embed_texts(texts, batch_size=50):
     """Call OpenAI embeddings API in batches"""
@@ -84,27 +59,36 @@ def embed_texts(texts, batch_size=50):
     return embeddings
 
 def ingest_pdf(pdf_path):
-    print(f"📄 Ingesting {pdf_path} ...")
-    pages = extract_text_from_pdf(pdf_path)
+    print(f"📄 Ingesting {pdf_path} with unstructured...")
+
+    # Use unstructured to partition the PDF into smart, structural elements
+    elements = partition_pdf(pdf_path, strategy="hi_res")
+
     docs, metas, ids = [], [], []
 
-    for page in pages:
-        # --- MODIFIED --- Use the new text_splitter object here
-        page_chunks = text_splitter.split_text(page["text"])
-        for i, chunk in enumerate(page_chunks):
-            docs.append(chunk)
-            metas.append({
+    for element in elements:
+        chunk = str(element)
+
+        # --- FIX: Only add the chunk if it's not empty or just whitespace ---
+        if chunk and chunk.strip():
+            # Create richer metadata using the element's category
+            metadata = {
                 "source": os.path.basename(pdf_path),
-                "page": page["page"],
-                "chunk_index": i,
+                "element_type": element.category,
                 "text": chunk
-            })
+            }
+            if hasattr(element.metadata, 'page_number'):
+                metadata['page'] = element.metadata.page_number
+
+            docs.append(chunk)
+            metas.append(metadata)
             ids.append(str(uuid.uuid4()))
 
     if not docs:
         print(f"No text extracted from {pdf_path}. Skipping.")
         return
 
+    # The rest of the function remains the same
     embeddings = embed_texts(docs)
     vectors = [(id_, vec, meta) for id_, vec, meta in zip(ids, embeddings, metas)]
 
@@ -113,7 +97,6 @@ def ingest_pdf(pdf_path):
         batch = vectors[i:i + BATCH_SIZE]
         index.upsert(vectors=batch)
     print(f"   Successfully ingested {len(vectors)} vectors for {os.path.basename(pdf_path)}.")
-
 # -----------------------------
 # Ingest all PDFs in folder
 # -----------------------------

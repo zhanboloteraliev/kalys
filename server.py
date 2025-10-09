@@ -40,12 +40,27 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # === Retrieval function ===
 def retrieve_context(query, top_k=4, selected_files=None):
-    # Embed query
+    # 1. Generate a hypothetical answer to the user's query
+    hyde_prompt = f"Please write a concise, hypothetical answer to the following Kyrgyz legal question, assuming it could be found in a legal document. Question: {query}"
+
+    try:
+        hyde_response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": hyde_prompt}],
+            temperature=0.0  # Make the answer factual and non-creative
+        )
+        hypothetical_answer = hyde_response.choices[0].message.content
+    except Exception as e:
+        print(f"HyDE generation failed: {e}")
+        hypothetical_answer = query  # Fallback to original query if HyDE fails
+
+    # 2. Embed the richer, hypothetical answer for the search
     query_embedding = client.embeddings.create(
         model="text-embedding-3-small",
-        input=query
+        input=hypothetical_answer
     ).data[0].embedding
 
+    # 3. Query Pinecone using the new, enhanced embedding
     if selected_files:
         pinecone_filter = {"source": {"$in": selected_files}}
         results = index.query(vector=query_embedding, top_k=top_k, filter=pinecone_filter, include_metadata=True)
