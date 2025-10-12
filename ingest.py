@@ -4,7 +4,6 @@ import uuid
 from dotenv import load_dotenv
 from openai import OpenAI
 from pinecone import Pinecone, ServerlessSpec
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 from unstructured.partition.pdf import partition_pdf
 
 # -----------------------------

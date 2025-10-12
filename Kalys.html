@@ -318,11 +318,22 @@
             let assistantContent = T("api_error_message");
             let sources = [];
             try {
-                const ragResponse = await fetch("/rag", {
+                const response = await fetch("/rag", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ question: prompt, history: chatHistory, top_k: currentKValue, filters: selectedFiles })
-                }).then(res => res.json());
+                });
+
+                // Check if the server responded with an error status code
+                if (!response.ok) {
+                    // Try to get the error detail from the server's JSON response
+                    const errorData = await response.json();
+                    const detail = errorData.detail || `HTTP error! Status: ${response.status}`;
+                    // Throw an error to be caught by the 'catch' block
+                    throw new Error(detail);
+                }
+
+                const ragResponse = await response.json();
                 assistantContent = ragResponse.answer || T("api_error_message");
                 sources = ragResponse.sources || [];
             } catch (error) {
